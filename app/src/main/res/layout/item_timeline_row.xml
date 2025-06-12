@@ -1,0 +1,67 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:weightSum="7"
+    android:padding="4dp">
+
+    <!-- 시간 텍스트 (예: 06시) -->
+    <TextView
+        android:id="@+id/hourText"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="06"
+        android:textStyle="bold"
+        android:background="#DDDDDD" />
+
+    <!-- 6개의 10분 슬롯 -->
+    <TextView
+        android:id="@+id/min0"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+
+    <TextView
+        android:id="@+id/min10"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+
+    <TextView
+        android:id="@+id/min20"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+
+    <TextView
+        android:id="@+id/min30"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+
+    <TextView
+        android:id="@+id/min40"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+
+    <TextView
+        android:id="@+id/min50"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="#EEEEEE" />
+</LinearLayout>

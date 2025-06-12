@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">ScheduleApp</string>
+
+    <string name="minute_0">0</string>
+    <string name="minute_10">10</string>
+    <string name="minute_20">20</string>
+    <string name="minute_30">30</string>
+    <string name="minute_40">40</string>
+    <string name="minute_50">50</string>
+
+    <!-- 날짜 & D-day -->
+    <string name="date_placeholder">2025년 6월 6일</string>
+    <string name="dday_placeholder">D-day</string>
+
+    <!-- 제목 -->
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+
+    <!-- 표 헤더 -->
+    <string name="priority">priority</string>
+    <string name="to_do_list">do-list</string>
+    <string name="time">time</string>
+    <string name="deadline">dead-line</string>
+
+    <!-- 버튼 -->
+    <string name="plus">+</string>
+    <string name="delete_daily">Delete Daily</string>
+    <string name="delete_weekly">Delete Weekly</string>
+
+    <!-- 입력 안내 -->
+    <string name="hint_task">할 일을 등록하세요</string>
+
+    <string name="home_title">HOME</string>
+    <string name="calendar_title">Calender</string>
+    <string name="todo_title">Do-List</string>
+    <string name="timeline_title">Timeline</string>
+
+</resources>
