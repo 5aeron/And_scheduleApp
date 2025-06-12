@@ -30,10 +30,8 @@ public class CalendarFragment extends Fragment {
 
     private Calendar currentCalendar;
     private LocalDate selectedDate;
-    // 내부에서는 LocalDate를 키로 씀
     private Map<LocalDate, List<Schedule>> scheduleMap = new HashMap<>();
 
-    // ★ 아래 2줄 반드시 추가
     private SharedPreferences prefs;
     private static final String SCHEDULE_MAP_KEY = "calendar_schedule_map";
 
@@ -53,9 +51,7 @@ public class CalendarFragment extends Fragment {
 
         currentCalendar = Calendar.getInstance();
 
-        // ★ prefs 초기화
         prefs = requireContext().getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE);
-        // ★ 일정 복원
         loadSchedulesFromPrefs();
 
         updateMonthText();
@@ -129,20 +125,93 @@ public class CalendarFragment extends Fragment {
         calendarRecyclerView.setAdapter(adapter);
     }
 
+    // ✔️ 달력 아래 일정 리스트 & 클릭 → 수정/삭제 팝업
     private void updateEventText(LocalDate date) {
         List<Schedule> events = scheduleMap.getOrDefault(date, new ArrayList<>());
         if (events.isEmpty()) {
             eventText.setText("일정 없음");
+            eventText.setOnClickListener(null);
         } else {
             StringBuilder sb = new StringBuilder();
-            for (Schedule s : events) {
-                sb.append("• ").append(s.getTitle()).append("\n");
+            for (int i = 0; i < events.size(); i++) {
+                sb.append(i + 1).append(". ").append(events.get(i).getTitle()).append("\n");
             }
             eventText.setText(sb.toString().trim());
+
+            eventText.setOnClickListener(v -> showScheduleListDialog(date, events));
         }
     }
 
-    // showAddScheduleDialog(LocalDate date) ★ 중복 함수 하나만 남기기!
+    // ✔️ 일정 목록 팝업 (클릭 시 수정/삭제 선택)
+    private void showScheduleListDialog(LocalDate date, List<Schedule> events) {
+        String[] items = new String[events.size()];
+        for (int i = 0; i < events.size(); i++) {
+            items[i] = events.get(i).getTitle();
+        }
+        new AlertDialog.Builder(getContext())
+                .setTitle(date + " 일정 선택")
+                .setItems(items, (dialog, which) -> {
+                    showEditOrDeleteDialog(date, which);
+                })
+                .show();
+    }
+
+    // ✔️ 일정 수정/삭제 선택 다이얼로그
+    private void showEditOrDeleteDialog(LocalDate date, int index) {
+        String[] options = {"수정", "삭제"};
+        new AlertDialog.Builder(getContext())
+                .setTitle("일정 작업 선택")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showEditScheduleDialog(date, index);
+                    } else if (which == 1) {
+                        deleteSchedule(date, index);
+                    }
+                })
+                .show();
+    }
+
+    // ✔️ 일정 수정
+    private void showEditScheduleDialog(LocalDate date, int index) {
+        List<Schedule> list = scheduleMap.get(date);
+        if (list == null || index < 0 || index >= list.size()) return;
+
+        Schedule schedule = list.get(index);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("일정 수정");
+
+        EditText input = new EditText(getContext());
+        input.setText(schedule.getTitle());
+        builder.setView(input);
+
+        builder.setPositiveButton("수정", (dialog, which) -> {
+            String newTitle = input.getText().toString().trim();
+            if (!newTitle.isEmpty()) {
+                schedule.setTitle(newTitle);
+                saveSchedulesToPrefs();
+                loadCalendar();
+                updateEventText(date);
+            }
+        });
+        builder.setNegativeButton("취소", null);
+        builder.show();
+    }
+
+    // ✔️ 일정 삭제
+    private void deleteSchedule(LocalDate date, int index) {
+        List<Schedule> list = scheduleMap.get(date);
+        if (list == null || index < 0 || index >= list.size()) return;
+        list.remove(index);
+        if (list.isEmpty()) {
+            scheduleMap.remove(date);
+        }
+        saveSchedulesToPrefs();
+        loadCalendar();
+        updateEventText(date);
+    }
+
+    // 일정 등록 (기존)
     private void showAddScheduleDialog(LocalDate date) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(date + " 일정 추가");
@@ -156,7 +225,7 @@ public class CalendarFragment extends Fragment {
             if (!task.isEmpty()) {
                 Schedule newSchedule = new Schedule(task, 9, 0, 6, "#FF4081");
                 scheduleMap.computeIfAbsent(date, k -> new ArrayList<>()).add(newSchedule);
-                saveSchedulesToPrefs();  // ★ 반드시 추가!
+                saveSchedulesToPrefs();
                 loadCalendar();
                 updateEventText(date);
             }
@@ -166,10 +235,9 @@ public class CalendarFragment extends Fragment {
         builder.show();
     }
 
-    // Map<LocalDate, List<Schedule>>를 안전하게 저장/복원
+    // 데이터 저장 (LocalDate → String으로 변환해서 저장)
     private void saveSchedulesToPrefs() {
         Gson gson = new Gson();
-        // LocalDate → String으로 바꿔서 저장
         Map<String, List<Schedule>> stringKeyMap = new HashMap<>();
         for (Map.Entry<LocalDate, List<Schedule>> entry : scheduleMap.entrySet()) {
             stringKeyMap.put(entry.getKey().toString(), entry.getValue());
@@ -178,6 +246,7 @@ public class CalendarFragment extends Fragment {
         prefs.edit().putString(SCHEDULE_MAP_KEY, json).apply();
     }
 
+    // 데이터 복원 (String → LocalDate로 역변환)
     private void loadSchedulesFromPrefs() {
         Gson gson = new Gson();
         String json = prefs.getString(SCHEDULE_MAP_KEY, null);
