@@ -62,13 +62,14 @@ public class TodoFragment extends Fragment {
         updateWeeklyRangeText();
         ddayText.setOnClickListener(v -> showDdayPicker());
 
+        // ★ dailyTasks가 7시 이후에 초기화되는 로직 반영!
         loadTasksFromStorage();
+
         setupDailyList();
         setupWeeklyList();
 
         sortDailyTasks();
         sortWeeklyTasks();
-
 
         return view;
     }
@@ -89,7 +90,6 @@ public class TodoFragment extends Fragment {
         }));
     }
 
-
     private void updateTodayAndDdayText() {
         LocalDate today = LocalDate.now();
         dateText.setText(today.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일")));
@@ -98,89 +98,85 @@ public class TodoFragment extends Fragment {
         if (saved != null) {
             LocalDate targetDate = LocalDate.parse(saved);
             long dday = ChronoUnit.DAYS.between(today, targetDate);
-            ddayText.setText(dday == 0 ? "D-day" : (dday > 0 ? "D-" + dday : "D+" + Math.abs(dday)));
+            if (dday >= 0) {
+                ddayText.setText("D-" + dday);
+            } else {
+                ddayText.setText("종료");
+            }
         } else {
-            ddayText.setText("D-day 설정");
+            ddayText.setText("D-day 없음");
         }
     }
 
     private void updateWeeklyRangeText() {
         LocalDate today = LocalDate.now();
-        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue());
-        LocalDate sunday = monday.plusDays(6);
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd");
-        String range = fmt.format(monday) + " ~ " + fmt.format(sunday);
-        weeklyRangeTextView.setText("Weekly (" + range + ")");
+        LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
+        String range = startOfWeek.format(DateTimeFormatter.ofPattern("M월 d일"))
+                + " ~ " + endOfWeek.format(DateTimeFormatter.ofPattern("M월 d일"));
+        weeklyRangeTextView.setText(range);
     }
 
-    private void showDdayPicker() {
-        LocalDate today = LocalDate.now();
-        DatePickerDialog picker = new DatePickerDialog(getContext(), (view, y, m, d) -> {
-            LocalDate targetDate = LocalDate.of(y, m + 1, d);
-            prefs.edit().putString("dday_target", targetDate.toString()).apply();
-            updateTodayAndDdayText();
-        }, today.getYear(), today.getMonthValue() - 1, today.getDayOfMonth());
-        picker.show();
-    }
-
-    private void setupDailyList() {
-        if (dailyTasks.isEmpty()) {
-            dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, LocalDate.now()));
-        }
-        dailyAdapter = new DailyTaskAdapter(dailyTasks, new DailyTaskAdapter.OnTaskActionListener() {
-            @Override public void onEdit(int pos) { showEditDailyDialog(pos); }
-            @Override public void onDelete(int pos) {
-                dailyTasks.remove(pos);
-                if (dailyTasks.isEmpty()) {
-                    dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, LocalDate.now()));
-                }
-                dailyAdapter.notifyDataSetChanged();
-                saveTasksToStorage();
-            }
-        });
-        dailyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
-        dailyRecyclerView.setAdapter(dailyAdapter);
-    }
-
-    private void setupWeeklyList() {
-        if (weeklyTasks.isEmpty()) {
-            weeklyTasks.add(new WeeklyTask("할 일을 등록하세요", "", false));
-        }
-        weeklyAdapter = new WeeklyTaskAdapter(weeklyTasks, this::showEditWeeklyDialog, pos -> {
-            weeklyTasks.remove(pos);
-            if (weeklyTasks.isEmpty()) {
-                weeklyTasks.add(new WeeklyTask("할 일을 등록하세요", "", false));
-            }
-            weeklyAdapter.notifyDataSetChanged();
-            saveTasksToStorage();
-        });
-        weeklyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
-        weeklyRecyclerView.setAdapter(weeklyAdapter);
-    }
-
+    // ★★★ 핵심: dailyTasks를 날짜/시간 기준으로 자동 초기화하는 로직 ★★★
     private void loadTasksFromStorage() {
         Gson gson = new Gson();
-        Type dailyType = new TypeToken<List<DailyTask>>() {}.getType();
-        Type weeklyType = new TypeToken<List<WeeklyTask>>() {}.getType();
 
-        String dailyJson = prefs.getString("daily_list", "[]");
-        String weeklyJson = prefs.getString("weekly_list", "[]");
-
-        dailyTasks = gson.fromJson(dailyJson, dailyType);
-        weeklyTasks = gson.fromJson(weeklyJson, weeklyType);
+        // 1. 마지막 저장 날짜 불러오기
+        String lastDateStr = prefs.getString("last_daily_date", null);
 
         LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+        LocalTime nowTime = LocalTime.now();
 
-        if (now.isAfter(LocalTime.of(7, 0))) {
-            dailyTasks.removeIf(task -> task.getDate().isBefore(today));
+        boolean resetDaily = false;
+        if (lastDateStr != null) {
+            LocalDate lastDate = LocalDate.parse(lastDateStr);
+            // 오늘 날짜와 다르고, 현재 시간이 7시 이후라면 초기화
+            if (!today.equals(lastDate) && nowTime.isAfter(LocalTime.of(7, 0))) {
+                resetDaily = true;
+            }
+        }
+
+        // 2. Daily Tasks 불러오기/초기화
+        if (resetDaily) {
+            dailyTasks = new ArrayList<>(); // 초기화
+            saveLastDailyDate(today);       // 날짜 갱신
+            saveTasksToStorage();           // 비운 걸 바로 저장
+        } else {
+            String dailyJson = prefs.getString("daily_tasks", null);
+            if (dailyJson != null) {
+                Type type = new TypeToken<List<DailyTask>>(){}.getType();
+                dailyTasks = gson.fromJson(dailyJson, type);
+            } else {
+                dailyTasks = new ArrayList<>();
+            }
+        }
+
+        // Weekly Tasks (기존대로)
+        String weeklyJson = prefs.getString("weekly_tasks", null);
+        if (weeklyJson != null) {
+            Type type = new TypeToken<List<WeeklyTask>>(){}.getType();
+            weeklyTasks = gson.fromJson(weeklyJson, type);
+        } else {
+            weeklyTasks = new ArrayList<>();
         }
     }
 
+    // ★ dailyTasks 저장 시 오늘 날짜도 같이 저장
     private void saveTasksToStorage() {
         Gson gson = new Gson();
-        prefs.edit().putString("daily_list", gson.toJson(dailyTasks)).apply();
-        prefs.edit().putString("weekly_list", gson.toJson(weeklyTasks)).apply();
+
+        String dailyJson = gson.toJson(dailyTasks);
+        prefs.edit().putString("daily_tasks", dailyJson).apply();
+
+        saveLastDailyDate(LocalDate.now()); // 오늘 날짜를 같이 저장!
+
+        String weeklyJson = gson.toJson(weeklyTasks);
+        prefs.edit().putString("weekly_tasks", weeklyJson).apply();
+    }
+
+    // ★ 날짜만 따로 저장하는 함수
+    private void saveLastDailyDate(LocalDate date) {
+        prefs.edit().putString("last_daily_date", date.toString()).apply();
     }
 
     private void showAddDailyDialog() {
@@ -222,6 +218,65 @@ public class TodoFragment extends Fragment {
                 })
                 .setNegativeButton("취소", null)
                 .show();
+    }
+
+    private void setupDailyList() {
+        dailyAdapter = new DailyTaskAdapter(dailyTasks, new DailyTaskAdapter.OnTaskActionListener() {
+            @Override
+            public void onEdit(int position) {
+                showEditDailyDialog(position);
+            }
+            @Override
+            public void onDelete(int position) {
+                // 실제 삭제 동작이 필요하면 여기에 구현!
+                // 예: dailyTasks.remove(position); dailyAdapter.notifyDataSetChanged(); saveTasksToStorage();
+            }
+        });
+        dailyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        dailyRecyclerView.setAdapter(dailyAdapter);
+
+        if (dailyTasks.isEmpty()) {
+            dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, LocalDate.now()));
+            dailyAdapter.notifyDataSetChanged();
+        }
+    }
+
+
+    private void setupWeeklyList() {
+        weeklyAdapter = new WeeklyTaskAdapter(
+                weeklyTasks,
+                new WeeklyTaskAdapter.OnTaskClickListener() {
+                    @Override
+                    public void onTaskClick(int position) {
+                        showEditWeeklyDialog(position);
+                    }
+                },
+                new WeeklyTaskAdapter.OnTaskDeleteListener() {
+                    @Override
+                    public void onDeleteClick(int position) {
+                        weeklyTasks.remove(position);
+                        weeklyAdapter.notifyDataSetChanged();
+                        saveTasksToStorage();
+                    }
+                }
+        );
+        weeklyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        weeklyRecyclerView.setAdapter(weeklyAdapter);
+
+        if (weeklyTasks.isEmpty()) {
+            weeklyTasks.add(new WeeklyTask("할 일을 등록하세요", "", false));
+            weeklyAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void showDdayPicker() {
+        LocalDate today = LocalDate.now();
+        DatePickerDialog picker = new DatePickerDialog(getContext(), (view, y, m, d) -> {
+            LocalDate selected = LocalDate.of(y, m + 1, d);
+            prefs.edit().putString("dday_target", selected.toString()).apply();
+            updateTodayAndDdayText();
+        }, today.getYear(), today.getMonthValue() - 1, today.getDayOfMonth());
+        picker.show();
     }
 
     private void showEditDailyDialog(int pos) {
