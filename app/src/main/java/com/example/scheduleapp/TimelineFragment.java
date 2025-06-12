@@ -25,6 +25,13 @@ public class TimelineFragment extends Fragment {
     private static final String TIMELINE_KEY = "timeline_data";
     private static final String TIMELINE_DATE_KEY = "timeline_last_reset_date";
 
+    // 회색 진하기별 팔레트
+    private static final String[] grayPalette = {
+        "#FAFAFA", "#F5F5F5", "#EEEEEE", "#E0E0E0", "#BDBDBD",
+        "#9E9E9E", "#757575", "#616161", "#424242", "#212121"
+    };
+    private static int grayColorIdx = 0;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_timeline, container, false);
@@ -61,6 +68,11 @@ public class TimelineFragment extends Fragment {
         Button addScheduleButton = view.findViewById(R.id.add_schedule_button);
         if (addScheduleButton != null) {
             addScheduleButton.setOnClickListener(v -> showAddScheduleDialog());
+        }
+
+        Button autoFillDailyButton = view.findViewById(R.id.auto_fill_daily_button);
+        if (autoFillDailyButton != null) {
+            autoFillDailyButton.setOnClickListener(v -> autoFillDailyTasksToTimeline());
         }
 
         return view;
@@ -156,7 +168,6 @@ public class TimelineFragment extends Fragment {
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_add_schedule, null);
 
         EditText titleInput = dialogView.findViewById(R.id.input_title);
-
         NumberPicker startHourPicker = dialogView.findViewById(R.id.input_start_hour);
         startHourPicker.setMinValue(8);
         startHourPicker.setMaxValue(23);
@@ -173,8 +184,6 @@ public class TimelineFragment extends Fragment {
         endMinutePicker.setMinValue(0);
         endMinutePicker.setMaxValue(5);
 
-        ToggleButton fixedToggle = dialogView.findViewById(R.id.fixed_toggle);
-
         String[] minuteValues = {"00", "10", "20", "30", "40", "50"};
         startMinutePicker.setDisplayedValues(minuteValues);
         endMinutePicker.setDisplayedValues(minuteValues);
@@ -188,8 +197,6 @@ public class TimelineFragment extends Fragment {
                     int startMinute = startMinutePicker.getValue() * 10;
                     int endHour = endHourPicker.getValue();
                     int endMinute = endMinutePicker.getValue() * 10;
-
-                    boolean isFixed = fixedToggle.isChecked();
 
                     int startBlock = (startHour - 8) * 6 + startMinute / 10;
                     int endBlock = (endHour - 8) * 6 + endMinute / 10;
@@ -210,9 +217,9 @@ public class TimelineFragment extends Fragment {
                     }
 
                     int blockLength = endBlock - startBlock;
-                    Schedule schedule = new Schedule(title, startHour, startMinute, blockLength,
-                            isFixed ? "#C0C0C0" : "#FFB6C1");
-                    schedule.setFixed(isFixed);
+                    String color = grayPalette[grayColorIdx % grayPalette.length];
+                    grayColorIdx++;
+                    Schedule schedule = new Schedule(title, startHour, startMinute, blockLength, color);
 
                     for (int b = startBlock; b < endBlock; b++) {
                         int r = b / 6;
@@ -235,8 +242,7 @@ public class TimelineFragment extends Fragment {
                         s.getTitle().equals(target.getTitle()) &&
                         s.getStartHour() == target.getStartHour() &&
                         s.getStartMinute() == target.getStartMinute() &&
-                        s.getBlockLength() == target.getBlockLength() &&
-                        s.isFixed() == target.isFixed()
+                        s.getBlockLength() == target.getBlockLength()
                 ) {
                     slot.setSchedule(null);
                 }
@@ -255,7 +261,6 @@ public class TimelineFragment extends Fragment {
         NumberPicker startMinutePicker = dialogView.findViewById(R.id.input_start_minute);
         NumberPicker endHourPicker = dialogView.findViewById(R.id.input_end_hour);
         NumberPicker endMinutePicker = dialogView.findViewById(R.id.input_end_minute);
-        ToggleButton fixedToggle = dialogView.findViewById(R.id.fixed_toggle);
 
         // 기존 일정 정보 세팅
         titleInput.setText(schedule.getTitle());
@@ -277,7 +282,6 @@ public class TimelineFragment extends Fragment {
         int endMinute = (endBlock % 6) * 10;
         endHourPicker.setValue(endHour);
         endMinutePicker.setValue(endMinute / 10);
-        fixedToggle.setChecked(schedule.isFixed());
 
         new AlertDialog.Builder(context)
                 .setTitle("일정 수정")
@@ -286,13 +290,12 @@ public class TimelineFragment extends Fragment {
                     // 기존 일정 삭제
                     deleteScheduleFromTimeline(schedule);
 
-                    // 새 일정 추가 (showAddScheduleDialog와 동일)
+                    // 새 일정 추가 (기존 색상 유지)
                     String title = titleInput.getText().toString().trim();
                     int startHour = startHourPicker.getValue();
                     int startMinute = startMinutePicker.getValue() * 10;
                     int newEndHour = endHourPicker.getValue();
                     int newEndMinute = endMinutePicker.getValue() * 10;
-                    boolean isFixed = fixedToggle.isChecked();
 
                     int startBlock = (startHour - 8) * 6 + startMinute / 10;
                     int newEndBlock = (newEndHour - 8) * 6 + newEndMinute / 10;
@@ -313,9 +316,8 @@ public class TimelineFragment extends Fragment {
                     }
 
                     int blockLength = newEndBlock - startBlock;
-                    Schedule newSchedule = new Schedule(title, startHour, startMinute, blockLength,
-                            isFixed ? "#C0C0C0" : "#FFB6C1");
-                    newSchedule.setFixed(isFixed);
+                    String color = schedule.getColor(); // 기존 색상 유지
+                    Schedule newSchedule = new Schedule(title, startHour, startMinute, blockLength, color);
 
                     for (int b = startBlock; b < newEndBlock; b++) {
                         int r = b / 6;
@@ -328,6 +330,88 @@ public class TimelineFragment extends Fragment {
                 })
                 .setNegativeButton("취소", null)
                 .show();
+    }
+
+    // 데일리 할 일 자동 배치 기능
+    private void autoFillDailyTasksToTimeline() {
+        String dailyJson = prefs.getString("daily_tasks", null);
+        if (dailyJson == null) {
+            Toast.makeText(context, "데일리 할 일이 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.List<DailyTask>>(){}.getType();
+        java.util.List<DailyTask> dailyTasks = new com.google.gson.Gson().fromJson(dailyJson, type);
+
+        // 이미 타임라인에 등록된 DailyTask(동일 제목) 제외
+        java.util.Set<String> scheduledTitles = new java.util.HashSet<>();
+        for (java.util.List<TimeSlot> row : timeSlotRows) {
+            for (TimeSlot slot : row) {
+                Schedule s = slot.getSchedule();
+                if (s != null) {
+                    scheduledTitles.add(s.getTitle());
+                }
+            }
+        }
+
+        // 우선순위, 예상 소요시간 순 정렬
+        dailyTasks.sort(java.util.Comparator.comparingInt(DailyTask::getPriority)
+            .thenComparingInt(DailyTask::getEstimatedMinutes));
+
+        // 데일리 일정용 색상 팔레트 (고정/비고정 구분 없이)
+        String[] dailyPalette = {
+            "#90CAF9", "#A5D6A7", "#FFD54F", "#FFAB91", "#CE93D8",
+            "#F48FB1", "#B0BEC5", "#FFF176", "#80CBC4", "#E6EE9C",
+            "#FF8A65", "#4DB6AC", "#BA68C8", "#FFD54F", "#64B5F6",
+            "#81C784", "#E57373", "#F06292", "#A1887F", "#90A4AE"
+        };
+        java.util.Map<String, String> taskColorMap = new java.util.HashMap<>();
+        int colorIdx = 0;
+        for (DailyTask task : dailyTasks) {
+            if (!taskColorMap.containsKey(task.getTask())) {
+                taskColorMap.put(task.getTask(), dailyPalette[colorIdx % dailyPalette.length]);
+                colorIdx++;
+            }
+        }
+
+        // 전체 타임라인을 1차원 리스트로 변환
+        java.util.List<TimeSlot> flatSlots = new java.util.ArrayList<>();
+        for (java.util.List<TimeSlot> row : timeSlotRows) flatSlots.addAll(row);
+
+        // 빈 칸에 배치
+        for (DailyTask task : dailyTasks) {
+            if (scheduledTitles.contains(task.getTask())) continue;
+
+            int needBlocks = (int)Math.ceil(task.getEstimatedMinutes() / 10.0);
+            boolean placed = false;
+            for (int i = 0; i <= flatSlots.size() - needBlocks; i++) {
+                boolean canPlace = true;
+                for (int k = 0; k < needBlocks; k++) {
+                    if (flatSlots.get(i + k).getSchedule() != null) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+                if (canPlace) {
+                    int startHour = flatSlots.get(i).getHour();
+                    int startMinute = flatSlots.get(i).getMinute();
+                    String color = taskColorMap.get(task.getTask());
+                    Schedule schedule = new Schedule(
+                        task.getTask(), startHour, startMinute, needBlocks, color
+                    );
+                    for (int k = 0; k < needBlocks; k++) {
+                        flatSlots.get(i + k).setSchedule(schedule);
+                    }
+                    placed = true;
+                    scheduledTitles.add(task.getTask());
+                    break;
+                }
+            }
+            if (!placed) {
+                Toast.makeText(context, "빈 칸이 부족해 일부 할 일을 배치하지 못했습니다.", Toast.LENGTH_SHORT).show();
+            }
+        }
+        timelineAdapter.notifyDataSetChanged();
+        saveTimelineToStorage();
     }
 
 }

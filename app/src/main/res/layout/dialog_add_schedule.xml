@@ -49,13 +49,6 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
-
-        <!-- 고정 일정 여부 -->
-        <ToggleButton
-            android:id="@+id/fixed_toggle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textOn="고정 일정"
-            android:textOff="고정 일정 아님" />
+        <!-- 색상 선택 Spinner 완전 삭제 -->
     </LinearLayout>
 </ScrollView>

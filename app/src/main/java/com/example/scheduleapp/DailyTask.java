@@ -7,13 +7,15 @@ public class DailyTask {
     private String task;
     private String estimatedTime;
     private boolean completed;
+    private boolean fixed;
     private LocalDate date;
 
-    public DailyTask(int priority, String task, String estimatedTime, boolean completed, LocalDate date) {
+    public DailyTask(int priority, String task, String estimatedTime, boolean completed, boolean fixed, LocalDate date) {
         this.priority = priority;
         this.task = task;
         this.estimatedTime = estimatedTime;
         this.completed = completed;
+        this.fixed = fixed;
         this.date = date;
     }
 
@@ -56,6 +58,15 @@ public class DailyTask {
     public void setDate(LocalDate date) {
         this.date = date;
     }
+
+    public boolean isFixed() {
+        return fixed;
+    }
+
+    public void setFixed(boolean fixed) {
+        this.fixed = fixed;
+    }
+
     public int getEstimatedMinutes() {
         if (estimatedTime == null || estimatedTime.isEmpty()) return Integer.MAX_VALUE;
 

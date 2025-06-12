@@ -212,7 +212,7 @@ public class TodoFragment extends Fragment {
                     } catch (NumberFormatException ignored) {}
 
                     dailyTasks.removeIf(task -> task.getTask().equals("할 일을 등록하세요"));
-                    dailyTasks.add(0, new DailyTask(priority, taskText, timeText, false, LocalDate.now()));
+                    dailyTasks.add(0, new DailyTask(priority, taskText, timeText, false, false, LocalDate.now()));
                     dailyAdapter.notifyDataSetChanged();
                     saveTasksToStorage();
                 })
@@ -236,7 +236,7 @@ public class TodoFragment extends Fragment {
         dailyRecyclerView.setAdapter(dailyAdapter);
 
         if (dailyTasks.isEmpty()) {
-            dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, LocalDate.now()));
+            dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, false, LocalDate.now()));
             dailyAdapter.notifyDataSetChanged();
         }
     }
@@ -327,7 +327,7 @@ public class TodoFragment extends Fragment {
                 .setNegativeButton("삭제", (dialog, which) -> {
                     dailyTasks.remove(pos);
                     if (dailyTasks.isEmpty()) {
-                        dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, LocalDate.now()));
+                        dailyTasks.add(new DailyTask(0, "할 일을 등록하세요", "", false, false, LocalDate.now()));
                     }
                     dailyAdapter.notifyDataSetChanged();
                     saveTasksToStorage();
