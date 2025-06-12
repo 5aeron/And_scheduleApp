@@ -1,41 +1,60 @@
 package com.example.scheduleapp;
 
-public class Schedule {
+import java.io.Serializable;
+
+public class Schedule implements Serializable {
     private String title;
-    private int hour;
-    private int minute;
-    private int durationBlocks;
+    private int startHour;
+    private int startMinute;
+    private int blockLength;
     private String color;
-    private boolean fixed;  // 고정 일정 여부
+    private boolean isFixed;
 
-    // 일반 생성자
-    public Schedule(String title, int hour, int minute, int durationBlocks, String color) {
-        this(title, hour, minute, durationBlocks, color, false); // 기본값: 고정 아님
-    }
+    // 기본 생성자
+    public Schedule() {}
 
-    // 고정 여부 포함 생성자
-    public Schedule(String title, int hour, int minute, int durationBlocks, String color, boolean fixed) {
+    public Schedule(String title, int startHour, int startMinute, int blockLength, String color) {
         this.title = title;
-        this.hour = hour;
-        this.minute = minute;
-        this.durationBlocks = durationBlocks;
+        this.startHour = startHour;
+        this.startMinute = startMinute;
+        this.blockLength = blockLength;
         this.color = color;
-        this.fixed = fixed;
+        this.isFixed = false;
     }
 
-    // Getter
     public String getTitle() { return title; }
-    public int getHour() { return hour; }
-    public int getMinute() { return minute; }
-    public int getDurationBlocks() { return durationBlocks; }
-    public String getColor() { return color; }
-    public boolean isFixed() { return fixed; }
-
-    // Setter (필요 시 사용)
     public void setTitle(String title) { this.title = title; }
-    public void setHour(int hour) { this.hour = hour; }
-    public void setMinute(int minute) { this.minute = minute; }
-    public void setDurationBlocks(int durationBlocks) { this.durationBlocks = durationBlocks; }
+
+    public int getStartHour() { return startHour; }
+    public void setStartHour(int startHour) { this.startHour = startHour; }
+
+    public int getStartMinute() { return startMinute; }
+    public void setStartMinute(int startMinute) { this.startMinute = startMinute; }
+
+    public int getBlockLength() { return blockLength; }
+    public void setBlockLength(int blockLength) { this.blockLength = blockLength; }
+
+    public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
-    public void setFixed(boolean fixed) { this.fixed = fixed; }
+
+    public boolean isFixed() { return isFixed; }
+    public void setFixed(boolean fixed) { isFixed = fixed; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Schedule schedule = (Schedule) o;
+        return startHour == schedule.startHour &&
+                startMinute == schedule.startMinute &&
+                blockLength == schedule.blockLength &&
+                isFixed == schedule.isFixed &&
+                java.util.Objects.equals(title, schedule.title) &&
+                java.util.Objects.equals(color, schedule.color);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(title, startHour, startMinute, blockLength, color, isFixed);
+    }
 }

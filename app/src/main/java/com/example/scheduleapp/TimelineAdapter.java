@@ -19,12 +19,18 @@ import java.util.Calendar;
 
 public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder> {
 
+    public interface OnTimeSlotClickListener {
+        void onTimeSlotClick(TimeSlot slot);
+    }
+
     private final List<List<TimeSlot>> timeSlotRows;
     private final Context context;
+    private final OnTimeSlotClickListener listener;
 
-    public TimelineAdapter(Context context, List<List<TimeSlot>> timeSlotRows) {
+    public TimelineAdapter(Context context, List<List<TimeSlot>> timeSlotRows, OnTimeSlotClickListener listener) {
         this.context = context;
         this.timeSlotRows = timeSlotRows;
+        this.listener = listener;
     }
 
     @NonNull
@@ -45,15 +51,13 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                 holder.min30, holder.min40, holder.min50
         };
 
-        boolean[] filled = new boolean[6]; // 각 칸의 채움 여부
+        boolean[] filled = new boolean[6];
 
-        // 칸별로 채우기
         for (int i = 0; i < 6; ) {
             final TimeSlot slot = row.get(i);
             final Schedule schedule = slot.getSchedule();
 
             if (schedule != null) {
-                // 연속된 같은 일정이 몇 칸인지 계산
                 final int start = i;
                 int count = 1;
                 for (int j = i + 1; j < 6; j++) {
@@ -64,7 +68,6 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                     }
                 }
 
-                // 제목을 한 칸당 3글자씩만 분배 (공백 완전 제거)
                 String title = schedule.getTitle();
                 final String[] parts = splitTitleTo3PerSlotNoSpace(title, count);
                 final int finalCount = count;
@@ -74,9 +77,12 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                     cell.setText(parts[j]);
                     cell.setBackgroundColor(Color.parseColor(schedule.isFixed() ? "#C0C0C0" : schedule.getColor()));
                     cell.setTextColor(Color.BLACK);
-                    cell.setPadding(0, 0, 0, 0); // 패딩 제거
-                    // 모든 칸에 클릭 이벤트 할당
-                    cell.setOnClickListener(v -> showEditDialog(schedule));
+                    cell.setPadding(0, 0, 0, 0);
+
+                    cell.setOnClickListener(v -> {
+                        if (listener != null) listener.onTimeSlotClick(slot);
+                    });
+
                     filled[start + j] = true;
                 }
                 i += count;
@@ -85,7 +91,7 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
             }
         }
 
-        // 빈 칸 초기화
+        // ★★★ 빈 칸 반드시 초기화 (글씨/배경/클릭리스너 다 초기화!) ★★★
         for (int i = 0; i < 6; i++) {
             if (!filled[i]) {
                 slotViews[i].setText("");
@@ -94,6 +100,8 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
             }
         }
     }
+
+
 
     /**
      * 공백 제거, 한 칸에 3글자씩만 분배. 남는 칸은 빈칸
