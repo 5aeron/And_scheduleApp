@@ -4,13 +4,18 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.*;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.Calendar;
 
 public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder> {
 
@@ -31,53 +36,56 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
 
     @Override
     public void onBindViewHolder(@NonNull TimelineViewHolder holder, int position) {
-        List<TimeSlot> row = timeSlotRows.get(position);
+        final List<TimeSlot> row = timeSlotRows.get(position);
         int hour = row.get(0).getHour();
         holder.hourText.setText(String.format("%02d시", hour));
 
-        TextView[] slotViews = {
+        final TextView[] slotViews = {
                 holder.min0, holder.min10, holder.min20,
                 holder.min30, holder.min40, holder.min50
         };
 
-        boolean[] filled = new boolean[6]; // 어떤 칸이 채워졌는지 추적
+        boolean[] filled = new boolean[6]; // 각 칸의 채움 여부
 
-        for (int i = 0; i < 6; i++) {
-            TimeSlot slot = row.get(i);
-            Schedule schedule = slot.getSchedule();
+        // 칸별로 채우기
+        for (int i = 0; i < 6; ) {
+            final TimeSlot slot = row.get(i);
+            final Schedule schedule = slot.getSchedule();
 
             if (schedule != null) {
-                boolean isFirst = true;
-
-                for (int j = 0; j < 6; j++) {
-                    TimeSlot checkSlot = row.get(j);
-                    TextView cell = slotViews[j];
-                    if (checkSlot.getSchedule() == schedule) {
-                        final int finalJ = j;  // lambda-safe
-                        if (isFirst) {
-                            cell.setText(schedule.getTitle());
-                            cell.setBackgroundColor(Color.parseColor(schedule.isFixed() ? "#C0C0C0" : schedule.getColor()));
-                            cell.setTextColor(Color.BLACK);
-                            isFirst = false;
-                        } else {
-                            cell.setText("");
-                            cell.setBackgroundColor(Color.parseColor(schedule.isFixed() ? "#C0C0C0" : schedule.getColor()));
-                        }
-
-                        filled[j] = true;
-
-                        // 첫 번째 셀에만 클릭 이벤트
-                        if (finalJ == 0) {
-                            cell.setOnClickListener(v -> showEditDialog(schedule));
-                        } else {
-                            cell.setOnClickListener(null);
-                        }
+                // 연속된 같은 일정이 몇 칸인지 계산
+                final int start = i;
+                int count = 1;
+                for (int j = i + 1; j < 6; j++) {
+                    if (row.get(j).getSchedule() == schedule) {
+                        count++;
+                    } else {
+                        break;
                     }
                 }
+
+                // 제목을 한 칸당 3글자씩만 분배 (공백 완전 제거)
+                String title = schedule.getTitle();
+                final String[] parts = splitTitleTo3PerSlotNoSpace(title, count);
+                final int finalCount = count;
+
+                for (int j = 0; j < finalCount; j++) {
+                    final TextView cell = slotViews[start + j];
+                    cell.setText(parts[j]);
+                    cell.setBackgroundColor(Color.parseColor(schedule.isFixed() ? "#C0C0C0" : schedule.getColor()));
+                    cell.setTextColor(Color.BLACK);
+                    cell.setPadding(0, 0, 0, 0); // 패딩 제거
+                    // 모든 칸에 클릭 이벤트 할당
+                    cell.setOnClickListener(v -> showEditDialog(schedule));
+                    filled[start + j] = true;
+                }
+                i += count;
+            } else {
+                i++;
             }
         }
 
-        // 빈 셀 초기화
+        // 빈 칸 초기화
         for (int i = 0; i < 6; i++) {
             if (!filled[i]) {
                 slotViews[i].setText("");
@@ -87,11 +95,92 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
         }
     }
 
+    /**
+     * 공백 제거, 한 칸에 3글자씩만 분배. 남는 칸은 빈칸
+     */
+    private String[] splitTitleTo3PerSlotNoSpace(String title, int slotCount) {
+        title = title.replace(" ", ""); // 모든 공백 제거
+        String[] result = new String[slotCount];
+        int len = title.length();
+        int idx = 0;
+        for (int i = 0; i < slotCount; i++) {
+            int remain = len - idx;
+            if (remain >= 3) {
+                result[i] = title.substring(idx, idx + 3);
+                idx += 3;
+            } else if (remain > 0) {
+                result[i] = title.substring(idx, idx + remain);
+                idx += remain;
+            } else {
+                result[i] = "";
+            }
+        }
+        return result;
+    }
+
     private void showEditDialog(Schedule schedule) {
-        new AlertDialog.Builder(context)
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_schedule, null);
+
+        EditText titleInput = dialogView.findViewById(R.id.edit_title);
+        titleInput.setText(schedule.getTitle());
+
+        NumberPicker startHourPicker = dialogView.findViewById(R.id.edit_start_hour);
+        NumberPicker startMinutePicker = dialogView.findViewById(R.id.edit_start_minute);
+        NumberPicker endHourPicker = dialogView.findViewById(R.id.edit_end_hour);
+        NumberPicker endMinutePicker = dialogView.findViewById(R.id.edit_end_minute);
+        ToggleButton fixedToggle = dialogView.findViewById(R.id.edit_fixed_toggle);
+
+        // Picker 설정
+        startHourPicker.setMinValue(8);
+        startHourPicker.setMaxValue(23);
+        endHourPicker.setMinValue(8);
+        endHourPicker.setMaxValue(23);
+        startMinutePicker.setMinValue(0);
+        startMinutePicker.setMaxValue(5);
+        endMinutePicker.setMinValue(0);
+        endMinutePicker.setMaxValue(5);
+
+        String[] minuteValues = {"00", "10", "20", "30", "40", "50"};
+        startMinutePicker.setDisplayedValues(minuteValues);
+        endMinutePicker.setDisplayedValues(minuteValues);
+
+        // 현재 시간 설정
+        int currentStartHour = -1;
+        int currentStartMinute = -1;
+        int currentEndHour = -1;
+        int currentEndMinute = -1;
+
+        // 현재 시간 찾기
+        for (int i = 0; i < timeSlotRows.size(); i++) {
+            List<TimeSlot> row = timeSlotRows.get(i);
+            for (int j = 0; j < row.size(); j++) {
+                if (row.get(j).getSchedule() == schedule) {
+                    if (currentStartHour == -1) {
+                        currentStartHour = row.get(j).getHour();
+                        currentStartMinute = row.get(j).getMinute();
+                    }
+                    currentEndHour = row.get(j).getHour();
+                    currentEndMinute = row.get(j).getMinute() + 10;
+                    if (currentEndMinute == 60) {
+                        currentEndHour++;
+                        currentEndMinute = 0;
+                    }
+                }
+            }
+        }
+
+        startHourPicker.setValue(currentStartHour);
+        startMinutePicker.setValue(currentStartMinute / 10);
+        endHourPicker.setValue(currentEndHour);
+        endMinutePicker.setValue(currentEndMinute / 10);
+        fixedToggle.setChecked(schedule.isFixed());
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("일정 수정/삭제")
-                .setMessage("이 일정을 수정하거나 삭제하시겠습니까?")
-                .setPositiveButton("삭제", (d, w) -> {
+                .setView(dialogView)
+                .setPositiveButton("수정", null)
+                .setNegativeButton("삭제", (d, w) -> {
+                    // UI에서 삭제
                     for (List<TimeSlot> row : timeSlotRows) {
                         for (TimeSlot slot : row) {
                             if (slot.getSchedule() == schedule) {
@@ -101,11 +190,71 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                     }
                     notifyDataSetChanged();
                 })
-                .setNegativeButton("수정", (d, w) -> {
-                    Toast.makeText(context, "수정 기능은 추후 구현하세요.", Toast.LENGTH_SHORT).show();
-                })
                 .setNeutralButton("취소", null)
-                .show();
+                .create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            Button button = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(view -> {
+                String title = titleInput.getText().toString().trim();
+                if (title.isEmpty()) {
+                    Toast.makeText(context, "제목을 입력해주세요.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                int startHour = startHourPicker.getValue();
+                int startMinute = startMinutePicker.getValue() * 10;
+                int endHour = endHourPicker.getValue();
+                int endMinute = endMinutePicker.getValue() * 10;
+
+                int startBlock = (startHour - 8) * 6 + startMinute / 10;
+                int endBlock = (endHour - 8) * 6 + endMinute / 10;
+
+                if (startBlock >= endBlock) {
+                    Toast.makeText(context, "종료 시간이 시작 시간보다 늦어야 합니다.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // 중복 체크 (현재 일정 제외)
+                for (int b = startBlock; b < endBlock; b++) {
+                    int r = b / 6;
+                    int c = b % 6;
+                    Schedule existingSchedule = timeSlotRows.get(r).get(c).getSchedule();
+                    if (existingSchedule != null && existingSchedule != schedule) {
+                        Toast.makeText(context, "선택한 시간에 이미 다른 일정이 있습니다.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+
+                // UI에서 기존 일정 삭제
+                for (List<TimeSlot> row : timeSlotRows) {
+                    for (TimeSlot slot : row) {
+                        if (slot.getSchedule() == schedule) {
+                            slot.setSchedule(null);
+                        }
+                    }
+                }
+
+                // 새로운 일정 설정
+                boolean isFixed = fixedToggle.isChecked();
+                int blockLength = endBlock - startBlock;
+                Schedule newSchedule = new Schedule(title, startHour, startMinute, blockLength,
+                        isFixed ? "#C0C0C0" : "#FFB6C1");
+                newSchedule.setFixed(isFixed);
+
+                // UI 업데이트
+                for (int b = startBlock; b < endBlock; b++) {
+                    int r = b / 6;
+                    int c = b % 6;
+                    timeSlotRows.get(r).get(c).setSchedule(newSchedule);
+                }
+
+                notifyDataSetChanged();
+                dialog.dismiss();
+            });
+        });
+
+        dialog.show();
     }
 
     @Override

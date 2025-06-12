@@ -9,7 +9,6 @@ import android.widget.*;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.*;
 
 public class TimelineFragment extends Fragment {
@@ -65,20 +64,14 @@ public class TimelineFragment extends Fragment {
         startMinutePicker.setMaxValue(5);
 
         NumberPicker endHourPicker = dialogView.findViewById(R.id.input_end_hour);
-        startHourPicker.setMinValue(8);
-        startHourPicker.setMaxValue(23);
+        endHourPicker.setMinValue(8);
+        endHourPicker.setMaxValue(23);
 
         NumberPicker endMinutePicker = dialogView.findViewById(R.id.input_end_minute);
         endMinutePicker.setMinValue(0);
         endMinutePicker.setMaxValue(5);
 
         ToggleButton fixedToggle = dialogView.findViewById(R.id.fixed_toggle);
-
-        // Picker 설정
-        startHourPicker.setMinValue(8); startHourPicker.setMaxValue(23);
-        endHourPicker.setMinValue(8);   endHourPicker.setMaxValue(23);
-        startMinutePicker.setMinValue(0); startMinutePicker.setMaxValue(5);
-        endMinutePicker.setMinValue(0);   endMinutePicker.setMaxValue(5);
 
         String[] minuteValues = {"00", "10", "20", "30", "40", "50"};
         startMinutePicker.setDisplayedValues(minuteValues);
