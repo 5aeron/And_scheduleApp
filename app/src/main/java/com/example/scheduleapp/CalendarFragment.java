@@ -14,6 +14,12 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import android.content.Context;
+import android.content.SharedPreferences;
+
 public class CalendarFragment extends Fragment {
 
     private TextView monthText, eventText;
@@ -24,7 +30,12 @@ public class CalendarFragment extends Fragment {
 
     private Calendar currentCalendar;
     private LocalDate selectedDate;
+    // 내부에서는 LocalDate를 키로 씀
     private Map<LocalDate, List<Schedule>> scheduleMap = new HashMap<>();
+
+    // ★ 아래 2줄 반드시 추가
+    private SharedPreferences prefs;
+    private static final String SCHEDULE_MAP_KEY = "calendar_schedule_map";
 
     public CalendarFragment() {}
 
@@ -41,6 +52,12 @@ public class CalendarFragment extends Fragment {
         calendarRecyclerView = view.findViewById(R.id.calendar_recycler_view);
 
         currentCalendar = Calendar.getInstance();
+
+        // ★ prefs 초기화
+        prefs = requireContext().getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE);
+        // ★ 일정 복원
+        loadSchedulesFromPrefs();
+
         updateMonthText();
 
         prevMonth.setOnClickListener(v -> {
@@ -125,6 +142,7 @@ public class CalendarFragment extends Fragment {
         }
     }
 
+    // showAddScheduleDialog(LocalDate date) ★ 중복 함수 하나만 남기기!
     private void showAddScheduleDialog(LocalDate date) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(date + " 일정 추가");
@@ -138,6 +156,7 @@ public class CalendarFragment extends Fragment {
             if (!task.isEmpty()) {
                 Schedule newSchedule = new Schedule(task, 9, 0, 6, "#FF4081");
                 scheduleMap.computeIfAbsent(date, k -> new ArrayList<>()).add(newSchedule);
+                saveSchedulesToPrefs();  // ★ 반드시 추가!
                 loadCalendar();
                 updateEventText(date);
             }
@@ -145,5 +164,36 @@ public class CalendarFragment extends Fragment {
 
         builder.setNegativeButton("취소", null);
         builder.show();
+    }
+
+    // Map<LocalDate, List<Schedule>>를 안전하게 저장/복원
+    private void saveSchedulesToPrefs() {
+        Gson gson = new Gson();
+        // LocalDate → String으로 바꿔서 저장
+        Map<String, List<Schedule>> stringKeyMap = new HashMap<>();
+        for (Map.Entry<LocalDate, List<Schedule>> entry : scheduleMap.entrySet()) {
+            stringKeyMap.put(entry.getKey().toString(), entry.getValue());
+        }
+        String json = gson.toJson(stringKeyMap);
+        prefs.edit().putString(SCHEDULE_MAP_KEY, json).apply();
+    }
+
+    private void loadSchedulesFromPrefs() {
+        Gson gson = new Gson();
+        String json = prefs.getString(SCHEDULE_MAP_KEY, null);
+        if (json != null) {
+            Type type = new TypeToken<Map<String, List<Schedule>>>(){}.getType();
+            try {
+                Map<String, List<Schedule>> stringKeyMap = gson.fromJson(json, type);
+                scheduleMap = new HashMap<>();
+                for (Map.Entry<String, List<Schedule>> entry : stringKeyMap.entrySet()) {
+                    scheduleMap.put(LocalDate.parse(entry.getKey()), entry.getValue());
+                }
+            } catch (Exception e) {
+                scheduleMap = new HashMap<>();
+            }
+        } else {
+            scheduleMap = new HashMap<>();
+        }
     }
 }
