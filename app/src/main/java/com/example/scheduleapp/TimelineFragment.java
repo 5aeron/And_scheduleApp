@@ -25,12 +25,20 @@ public class TimelineFragment extends Fragment {
     private static final String TIMELINE_KEY = "timeline_data";
     private static final String TIMELINE_DATE_KEY = "timeline_last_reset_date";
 
-    // 회색 진하기별 팔레트
-    private static final String[] grayPalette = {
-        "#FAFAFA", "#F5F5F5", "#EEEEEE", "#E0E0E0", "#BDBDBD",
-        "#9E9E9E", "#757575", "#616161", "#424242", "#212121"
+    // 보라색 진하기별 팔레트
+    private static final String[] purplePalette = {
+        "#E1BEE7", // 연보라
+        "#CE93D8",
+        "#BA68C8",
+        "#AB47BC",
+        "#9C27B0",
+        "#8E24AA",
+        "#7B1FA2",
+        "#6A1B9A",
+        "#4A148C", // 진보라
+        "#311B92"  // 거의 남색
     };
-    private static int grayColorIdx = 0;
+    private static int purpleColorIdx = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -193,6 +201,10 @@ public class TimelineFragment extends Fragment {
                 .setView(dialogView)
                 .setPositiveButton("추가", (dialog, which) -> {
                     String title = titleInput.getText().toString().trim();
+                    if (title.isEmpty()) {
+                        Toast.makeText(context, "일정 제목을 입력해주세요", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     int startHour = startHourPicker.getValue();
                     int startMinute = startMinutePicker.getValue() * 10;
                     int endHour = endHourPicker.getValue();
@@ -217,8 +229,8 @@ public class TimelineFragment extends Fragment {
                     }
 
                     int blockLength = endBlock - startBlock;
-                    String color = grayPalette[grayColorIdx % grayPalette.length];
-                    grayColorIdx++;
+                    String color = purplePalette[purpleColorIdx % purplePalette.length];
+                    purpleColorIdx++;
                     Schedule schedule = new Schedule(title, startHour, startMinute, blockLength, color);
 
                     for (int b = startBlock; b < endBlock; b++) {
