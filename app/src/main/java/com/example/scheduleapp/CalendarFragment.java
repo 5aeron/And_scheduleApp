@@ -54,6 +54,10 @@ public class CalendarFragment extends Fragment {
         prefs = requireContext().getSharedPreferences("schedule_prefs", Context.MODE_PRIVATE);
         loadSchedulesFromPrefs();
 
+        // 오늘 날짜를 기본 선택
+        selectedDate = LocalDate.now();
+        updateEventText(selectedDate);
+
         updateMonthText();
 
         prevMonth.setOnClickListener(v -> {
