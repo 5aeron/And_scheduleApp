@@ -55,8 +55,9 @@ public class CalendarFragment extends Fragment {
         loadSchedulesFromPrefs();
 
         // 오늘 날짜를 기본 선택
-        selectedDate = LocalDate.now();
-        updateEventText(selectedDate);
+        if (selectedDate == null) {
+            selectedDate = LocalDate.now();
+        }
 
         updateMonthText();
 
@@ -82,6 +83,8 @@ public class CalendarFragment extends Fragment {
 
         calendarRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 7));
         loadCalendar();
+        // 오늘 일정 바로 표시
+        updateEventText(selectedDate);
 
         return view;
     }

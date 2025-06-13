@@ -1,6 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
     android:orientation="horizontal">
 
     <TextView
@@ -29,4 +29,14 @@
         android:gravity="center"
         android:background="@drawable/cell_border"
         android:textSize="14sp" />
+
+    <CheckBox
+        android:id="@+id/task_completed"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="@drawable/cell_border"
+        android:focusable="false"
+        android:focusableInTouchMode="false" />
 </LinearLayout>

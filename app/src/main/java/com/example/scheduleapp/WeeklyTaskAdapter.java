@@ -4,6 +4,7 @@ import android.graphics.Paint;
 import android.view.*;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.CheckBox;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ public class WeeklyTaskAdapter extends RecyclerView.Adapter<WeeklyTaskAdapter.Vi
     private final List<WeeklyTask> tasks;
     private final OnTaskClickListener listener;
     private final OnTaskDeleteListener deleteListener;
+    private Runnable onTaskChanged;
 
     public interface OnTaskClickListener {
         void onTaskClick(int position);
@@ -68,6 +70,17 @@ public class WeeklyTaskAdapter extends RecyclerView.Adapter<WeeklyTaskAdapter.Vi
         holder.deadline.setTextColor(isPlaceholder ? grayColor : 0xFF000000);
 
         holder.itemView.setOnClickListener(isPlaceholder ? null : v -> listener.onTaskClick(position));
+
+        // 완료 체크박스 처리
+        holder.completed.setChecked(task.isCompleted());
+        holder.completed.setEnabled(!isPlaceholder);
+        holder.completed.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!isPlaceholder) {
+                task.setCompleted(isChecked);
+                if (onTaskChanged != null) onTaskChanged.run();
+                holder.itemView.post(() -> notifyItemChanged(position));
+            }
+        });
     }
 
     @Override
@@ -75,13 +88,19 @@ public class WeeklyTaskAdapter extends RecyclerView.Adapter<WeeklyTaskAdapter.Vi
         return tasks.size();
     }
 
+    public void setOnTaskChangedListener(Runnable listener) {
+        this.onTaskChanged = listener;
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView taskTitle, deadline;
+        CheckBox completed;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             taskTitle = itemView.findViewById(R.id.task_title);
             deadline = itemView.findViewById(R.id.task_deadline);
+            completed = itemView.findViewById(R.id.task_completed);
         }
     }
 }

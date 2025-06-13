@@ -1,8 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="#EDE7F6">
+    android:background="#EDE7F6"
+    android:padding="0dp">
 
     <TextView
         android:layout_width="0dp"
@@ -30,4 +32,14 @@
         android:background="@drawable/cell_border"
         android:text="@string/time"
         android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:background="@drawable/cell_border"
+        android:text="check"
+        android:textSize="14sp" />
+
 </LinearLayout>

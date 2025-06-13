@@ -3,7 +3,7 @@
     <item
         android:id="@+id/nav_timeline"
         android:icon="@drawable/ic_home"
-        android:title="타임라인" />
+        android:title="타임테이블" />
 
     <item
         android:id="@+id/nav_todo"

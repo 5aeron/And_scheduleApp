@@ -62,7 +62,6 @@ public class TodoFragment extends Fragment {
         updateWeeklyRangeText();
         ddayText.setOnClickListener(v -> showDdayPicker());
 
-        // ★ dailyTasks가 7시 이후에 초기화되는 로직 반영!
         loadTasksFromStorage();
 
         setupDailyList();
@@ -114,10 +113,9 @@ public class TodoFragment extends Fragment {
         LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
         String range = startOfWeek.format(DateTimeFormatter.ofPattern("M월 d일"))
                 + " ~ " + endOfWeek.format(DateTimeFormatter.ofPattern("M월 d일"));
-        weeklyRangeTextView.setText(range);
+        weeklyRangeTextView.setText("Weekly (" + range + ")");
     }
 
-    // ★★★ 핵심: dailyTasks를 날짜/시간 기준으로 자동 초기화하는 로직 ★★★
     private void loadTasksFromStorage() {
         Gson gson = new Gson();
 
@@ -232,6 +230,7 @@ public class TodoFragment extends Fragment {
                 // 예: dailyTasks.remove(position); dailyAdapter.notifyDataSetChanged(); saveTasksToStorage();
             }
         });
+        dailyAdapter.setOnTaskChangedListener(this::saveTasksToStorage);
         dailyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
         dailyRecyclerView.setAdapter(dailyAdapter);
 
@@ -260,6 +259,7 @@ public class TodoFragment extends Fragment {
                     }
                 }
         );
+        weeklyAdapter.setOnTaskChangedListener(this::saveTasksToStorage);
         weeklyRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
         weeklyRecyclerView.setAdapter(weeklyAdapter);
 

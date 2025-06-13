@@ -20,7 +20,6 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         fragmentManager = getSupportFragmentManager();
 
-        // 기본 프래그먼트 설정
         loadFragment(new TimelineFragment());
 
         bottomNavigationView.setOnItemSelectedListener(item -> {

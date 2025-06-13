@@ -4,7 +4,6 @@
     android:layout_height="wrap_content"
     android:weightSum="7">
 
-    <!-- 시간 텍스트 (예: 06시) -->
     <TextView
         android:id="@+id/hourText"
         android:layout_width="0dp"
@@ -15,7 +14,6 @@
         android:textStyle="bold"
         android:background="#DDDDDD" />
 
-    <!-- 6개의 10분 슬롯 -->
     <TextView
         android:id="@+id/min0"
         android:layout_width="0dp"

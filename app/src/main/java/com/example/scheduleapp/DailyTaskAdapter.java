@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.*;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.CheckBox;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -12,6 +13,7 @@ public class DailyTaskAdapter extends RecyclerView.Adapter<DailyTaskAdapter.View
 
     private final List<DailyTask> tasks;
     private final OnTaskActionListener listener;
+    private Runnable onTaskChanged;
 
     public interface OnTaskActionListener {
         void onEdit(int position);
@@ -48,6 +50,23 @@ public class DailyTaskAdapter extends RecyclerView.Adapter<DailyTaskAdapter.View
         holder.time.setTextColor(isPlaceholder ? grayColor : Color.BLACK);
 
         holder.title.setOnClickListener(isPlaceholder ? null : v -> listener.onEdit(position));
+
+        // 완료 체크박스 처리
+        holder.completed.setOnCheckedChangeListener(null);
+        holder.completed.setChecked(task.isCompleted());
+        holder.completed.setEnabled(!isPlaceholder);
+        if (task.isCompleted()) {
+            holder.title.setPaintFlags(holder.title.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+        } else {
+            holder.title.setPaintFlags(holder.title.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+        }
+        holder.completed.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!isPlaceholder) {
+                task.setCompleted(isChecked);
+                if (onTaskChanged != null) onTaskChanged.run();
+                holder.itemView.post(() -> notifyItemChanged(position));
+            }
+        });
     }
 
     @Override
@@ -55,14 +74,20 @@ public class DailyTaskAdapter extends RecyclerView.Adapter<DailyTaskAdapter.View
         return tasks.size();
     }
 
+    public void setOnTaskChangedListener(Runnable listener) {
+        this.onTaskChanged = listener;
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView priority, title, time;
+        CheckBox completed;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             priority = itemView.findViewById(R.id.task_priority);
             title = itemView.findViewById(R.id.task_title);
             time = itemView.findViewById(R.id.task_time);
+            completed = itemView.findViewById(R.id.task_completed);
         }
     }
 }

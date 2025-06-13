@@ -9,7 +9,6 @@ import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -75,7 +74,7 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                 for (int j = 0; j < finalCount; j++) {
                     final TextView cell = slotViews[start + j];
                     cell.setText(parts[j]);
-                    cell.setBackgroundColor(Color.parseColor(schedule.isFixed() ? "#C0C0C0" : schedule.getColor()));
+                    cell.setBackgroundColor(Color.parseColor(schedule.getColor()));
                     cell.setTextColor(Color.BLACK);
                     cell.setPadding(0, 0, 0, 0);
 
@@ -136,9 +135,7 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
         NumberPicker startMinutePicker = dialogView.findViewById(R.id.edit_start_minute);
         NumberPicker endHourPicker = dialogView.findViewById(R.id.edit_end_hour);
         NumberPicker endMinutePicker = dialogView.findViewById(R.id.edit_end_minute);
-        ToggleButton fixedToggle = dialogView.findViewById(R.id.edit_fixed_toggle);
 
-        // Picker 설정
         startHourPicker.setMinValue(8);
         startHourPicker.setMaxValue(23);
         endHourPicker.setMinValue(8);
@@ -152,13 +149,11 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
         startMinutePicker.setDisplayedValues(minuteValues);
         endMinutePicker.setDisplayedValues(minuteValues);
 
-        // 현재 시간 설정
         int currentStartHour = -1;
         int currentStartMinute = -1;
         int currentEndHour = -1;
         int currentEndMinute = -1;
 
-        // 현재 시간 찾기
         for (int i = 0; i < timeSlotRows.size(); i++) {
             List<TimeSlot> row = timeSlotRows.get(i);
             for (int j = 0; j < row.size(); j++) {
@@ -181,14 +176,12 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
         startMinutePicker.setValue(currentStartMinute / 10);
         endHourPicker.setValue(currentEndHour);
         endMinutePicker.setValue(currentEndMinute / 10);
-        fixedToggle.setChecked(schedule.isFixed());
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("일정 수정/삭제")
                 .setView(dialogView)
                 .setPositiveButton("수정", null)
                 .setNegativeButton("삭제", (d, w) -> {
-                    // UI에서 삭제
                     for (List<TimeSlot> row : timeSlotRows) {
                         for (TimeSlot slot : row) {
                             if (slot.getSchedule() == schedule) {
@@ -223,7 +216,6 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                     return;
                 }
 
-                // 중복 체크 (현재 일정 제외)
                 for (int b = startBlock; b < endBlock; b++) {
                     int r = b / 6;
                     int c = b % 6;
@@ -234,7 +226,6 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                     }
                 }
 
-                // UI에서 기존 일정 삭제
                 for (List<TimeSlot> row : timeSlotRows) {
                     for (TimeSlot slot : row) {
                         if (slot.getSchedule() == schedule) {
@@ -244,11 +235,8 @@ public class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.Timeli
                 }
 
                 // 새로운 일정 설정
-                boolean isFixed = fixedToggle.isChecked();
                 int blockLength = endBlock - startBlock;
-                Schedule newSchedule = new Schedule(title, startHour, startMinute, blockLength,
-                        isFixed ? "#C0C0C0" : "#FFB6C1");
-                newSchedule.setFixed(isFixed);
+                Schedule newSchedule = new Schedule(title, startHour, startMinute, blockLength, "#FFB6C1");
 
                 // UI 업데이트
                 for (int b = startBlock; b < endBlock; b++) {

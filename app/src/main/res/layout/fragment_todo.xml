@@ -1,94 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- 날짜 + D-Day -->
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-        <!-- 날짜 + D-Day -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/date_text"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text=""
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/dday_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Daily Title -->
         <TextView
+            android:id="@+id/date_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=""
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/dday_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/daily"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
+            android:text=""
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <!-- Daily Header -->
-        <include layout="@layout/header_daily" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/daily"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"/>
 
-        <!-- Daily RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/daily_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp" />
 
-        <!-- Daily + Button -->
-        <Button
-            android:id="@+id/add_daily_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/plus"
-            android:textSize="20sp"
-            android:background="#EDE7F6"
-            android:layout_marginBottom="16dp" />
+    <!-- Daily Header -->
+    <include layout="@layout/header_daily" />
 
-        <!-- Weekly Header Text -->
+    <!-- Daily RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/daily_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/add_daily_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="0dp"
+        android:text="+" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp">
+
         <TextView
             android:id="@+id/weekly_range_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/weekly"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:textStyle="bold" />
 
-        <!-- Weekly Header -->
-        <include layout="@layout/header_weekly" />
-
-        <!-- Weekly RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/weekly_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Weekly + Button -->
-        <Button
-            android:id="@+id/add_weekly_button"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="@string/plus"
-            android:textSize="20sp"
-            android:background="#DDDDDD" />
     </LinearLayout>
-</ScrollView>
+
+    <!-- Weekly Header -->
+    <include layout="@layout/header_weekly" />
+
+    <!-- Weekly RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/weekly_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/add_weekly_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="0dp"
+        android:text="@string/plus" />
+
+</LinearLayout>
